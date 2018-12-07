@@ -2,19 +2,37 @@ from datetime import datetime
 import operator
 
 class Guard:
-    def __init__(self, id: int):
+    def __init__(self, id: int, sleeps: []):
         self.id = id
         # (begin, end, duration)
         self.sleeps = []
     
-    def addSleep(self, sleep: (datetime, datetime, int)):
+    def addSleep(self, sleep: (datetime, datetime, int)) -> None:
         self.sleeps.append(sleep)
     
-    def getTotSleep(self):
-        pass
+    def getTotSleep(self) -> int:
+        tot = 0
+        for s in self.sleeps:
+            tot += s[2]
+        return tot
     
-    def getAvgMin(self):
-        pass
+    def getAvgMin(self) -> int:
+        mins = {}
+        for s in self.sleeps:
+            begin = s[0].minute
+            end = s[1].minute
+            for m in range(begin, end):
+                if m in mins:
+                    mins[m] = mins[m] + 1
+                else:
+                    mins[m] = 1
+        return max(mins.items(), key=operator.itemgetter(1))[0]
+
+    def getStats(self) -> str:
+        return "id:{}, tot:{}, min:{}".format(g, guardSleeps[g].getTotSleep(), guardSleeps[g].getAvgMin())
+
+    def __str__(self):
+        return "{}: {}".format(self.id, list(map(lambda x: "{}->{}".format(x[0], x[1]), self.sleeps)))
 
 with open('input.txt', 'r') as f:
     lines = f.readlines()
@@ -34,6 +52,7 @@ with open('input.txt', 'r') as f:
     # sort datetime
     logs.sort()
 
+    # create guard objects for each
     # id -> [(begin, end, duration)]
     guardSleeps = {}
     curGuard = None
@@ -48,40 +67,28 @@ with open('input.txt', 'r') as f:
             curSleep = dt
         else:
             if curGuard != None:
-                dur = (curWake - curSleep).seconds//60
+                dur = (curWake - curSleep).seconds/60
+                #print("{}->{} = {}".format(curSleep, curWake, dur))
                 data = (curSleep, curWake, dur)
+
                 if curGuard in guardSleeps:
-                    guardSleeps[curGuard].append(data)
+                    guardSleeps[curGuard].addSleep(data)
                 else:
-                    guardSleeps[curGuard] = [data]
+                    guardSleeps[curGuard] = Guard(curGuard, [data])
             # new guard
             curGuard = int(ev[ev.find('#') + 1:ev.find('b') - 1])
-    
+
     # find biggest time asleep
-    # & average minute
     bigGuard = None
-    bigSleep = 0
-    bigAvgMin = None
-    for id in guardSleeps:
-        totSleep = 0
-        mins = {}
-        for sl in guardSleeps[id]:
-            totSleep += sl[2]
-            # calc avg min
-            start = sl[0].minute
-            finish = sl[1].minute
-            for m in range(start, finish):
-                if m in mins:
-                    mins[m] += 1
-                else:
-                    mins[m] = 1
-        if totSleep > bigSleep:
-            bigGuard = id
-            bigSleep = totSleep
-            bigAvgMin = max(mins.items(), key=operator.itemgetter(1))[0]
-            print("{}: {}, {}".format(bigGuard, bigSleep, bigAvgMin))
-            
-    print("{}: {}, {}".format(bigGuard, bigSleep, bigAvgMin))
-    print("{}".format(bigGuard * bigAvgMin))
+    bigTot = 0
+    for g in guardSleeps:
+        guard = guardSleeps[g]
+        if guard.getTotSleep() > bigTot:
+            print('{} > {}'.format(guard.getTotSleep(), bigTot))
+            bigGuard = guard
+            bigTot = guard.getTotSleep()
+        print(guard.getStats())
+    print('---')
+    print(bigGuard.getStats())
     
     f.close()
