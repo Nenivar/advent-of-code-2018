@@ -1,86 +1,9 @@
-from enum import Enum
-import functools
 import string
+import operator
 
-# immutable
-class Vec2():
-    def __init__(self, x: int, y: int, label=''):
-        self.x = x
-        self.y = y
-        self.label = label
-    
-    def __add__(self, other):
-        return Vec2(self.x + other.x, self.y + other.y)
-    
-    def __eq__(self, other):
-        if other == None:
-            return False
-        return self.x == other.x and self.y == other.y
-    
-    def __repr__(self):
-        return '({},{})'.format(self.x, self.y)
-
-    # will never be equal S_W, S_E...
-    def isEqDir(self, dir, other):
-        flag = True
-        if (dir.value.x == 1 or dir.value.x == -1) and self.x != other.x:
-            flag = False
-        if (dir.value.y == 1 or dir.value.y == -1) and self.y != other.y:
-            flag = False
-        return flag
-    
-    def isMoreDir(self, dir, other):
-        flag = True
-        """ if dir == dir.N_W:
-            return self.x < other.x and self.y < other.y
-        elif dir == dir.N:
-            return self.y < other.y
-        elif dir == dir.N_E:
-            return self.x > other.x and self.y < other.y
-        elif dir == dir.E:
-            return self.x > other.x
-        elif dir == dir.S_E:
-            return self.x > other.x and self.y > other.y
-        elif dir == dir.S:
-            return self.y > other.y
-        elif dir == dir.S_W:
-            return self.x < other.x and self.y > other.y
-        elif dir == dir.W:
-            return self.x < other.x """
-        if dir.value.x == 1 and self.x <= other.x:
-            flag = False
-        if dir.value.x == -1 and self.x >= other.x:
-            flag = False
-        if dir.value.y == 1 and self.y <= other.y:
-            flag = False
-        if dir.value.y == -1 and self.y >= other.y:
-            flag = False
-        return flag
-    
-    def toTuple(self):
-        return (self.x, self.y)
-
-class Rect():
-    def __init__(self, pos: Vec2, posEnd: Vec2):
-        self.pos = pos
-        self.posEnd = posEnd
-    
-    def isVecIn(self) -> bool:
-        pass
-    
-    def __repr__(self):
-        return '({}->{}, {}->{})'.format(self.pos.x, self.posEnd.x, self.pos.y, self.posEnd.y)
-
-class Dir(Enum):
-    N_W = Vec2(-1, -1)
-    N   = Vec2(0, -1)
-    N_E = Vec2(1, -1)
-    E   = Vec2(1, 0)
-    S_E = Vec2(1, 1)
-    S   = Vec2(0, 1)
-    S_W = Vec2(-1, 1)
-    W   = Vec2(-1, 0)
-
+"""
+    FILE INPUT
+"""
 def getInput(file_loc: str) -> [str]:
     lines = []
     with open(file_loc, 'r') as f:
@@ -88,197 +11,203 @@ def getInput(file_loc: str) -> [str]:
         f.close()
     return lines
 
-def lineToVec2(line: str, label = '') -> Vec2:
+def parseLine(line: str) -> (int, int):
     commPos = line.find(',')
     x = int(line[:commPos])
     y = int(line[commPos + 2:])
-    return Vec2(x, y, label)
+    return (x, y)
 
-def inputToVec2(input: [str]) -> [Vec2]:
-    vecs = []
-    for i in range(0, len(input)):
-        l = input[i]
-        syb = string.ascii_letters[i]
-        vecs.append(lineToVec2(l, syb))
-    #return list(map(lineToVec2, input))
-    return vecs
+def parseFile(file_loc: str) -> [(int, int)]:
+    inp = getInput(file_loc)
+    return list(map(parseLine, inp))
 
-# list because it can be tied
-def findMostDir(coords: [Vec2], dir: Dir) -> [Vec2]:
-    most = []
-    for v in coords:
-        if most == []:
-            most.append(v)
-        else:
-            if dir == Dir.N_E:
-                print('{} w/ {}'.format(v, most))
-            if v.isEqDir(dir, most[0]):
-                most.append(v)
-            elif v.isMoreDir(dir, most[0]):
-                most = [v]
-    return most
-
-# find viable coordinates
-def something() -> None:
-    pass
-
-# manhattan distance from one coord->another
-def distTo(v1, v2) -> int:
-    return abs(v2.x - v1.x ) + abs(v2.y - v1.y)
-
-# get space we're working in
-def coordSpace(vecs: [Vec2]) -> Rect:
-    left = None
-    right = None
-    top = None
-    bot = None
-    for v in vecs:
-        if left == None:
-            left = v.x
-        else:
-            left = v.x if v.x < left else left
-
-        if right == None:
-            right = v.x
-        else:
-            right = v.x if v.x > right else right
-
-        if top == None:
-            top = v.y
-        else:
-            top = v.y if v.y < top else top
-        
-        if bot == None:
-            bot = v.y
-        else:
-            bot = v.y if v.y > bot else bot
-    return Rect(Vec2(left, top), Vec2(right, bot))
+"""
+    VEC CALC
+"""
+class VecSpace():
+    """ coords   :: (int, int)
+        symbols  :: dict {(int, int) -> chr}
+        map      :: dict {(int, int) -> (int, int)}
+        posStart :: (int, int)
+        posEnd   :: (int, int)
+    """
+    def __init__(self, vecs: [(int, int)]):
+        self.coords = vecs
+        self.symbols = self.calcSymbols(vecs)
+        c = self.calcSpace(vecs)
+        self.posStart = c[0]
+        self.posEnd = c[1]
+        self.map = self.calcMap()
     
-
-# doesn't work
-def isAreaInfinite(vec: Vec2, vecs: [Vec2]) -> bool:
-    return functools.reduce(lambda x,y: x and y, map(lambda v: vec.x <= v.x, vecs)) \
-        or functools.reduce(lambda x,y: x and y, map(lambda v: vec.x >= v.x, vecs)) \
-        or functools.reduce(lambda x,y: x and y, map(lambda v: vec.y <= v.y, vecs)) \
-        or functools.reduce(lambda x,y: x and y, map(lambda v: vec.y >= v.y, vecs))
-
-# --------------------------------
-
-def printVecs(vecs: [Vec2]) -> str:
-    space = coordSpace(vecs)
-    fin = ''
-    for y in range(space.pos.y - 1, space.posEnd.y + 2):
-        for x in range(space.pos.x - 1, space.posEnd.x + 2):
-            s = '-'
-            v = Vec2(x,y)
-            if v in vecs:
-                """ if isAreaInfinite(v, vecs):
-                    s = 'I'
-                else:
-                    s = '#' """
-                # find v
-                for vv in vecs:
-                    if v == vv:
-                        v = vv
-                        break
-                if v.label != '':
-                    s = v.label
-                else:
-                    s = '#'
-            fin += s
-        fin += '\n'
-    return fin
-
-def printMap(map: dict, vecs: [Vec2]) -> str:
-    space = coordSpace(vecs)
-    fin = ''
-    for y in range(space.pos.y - 1, space.posEnd.y + 2):
-        for x in range(space.pos.x - 1, space.posEnd.x + 2):
-            if (x,y) in map:
-                s = map[(x, y)]
+    def calcSymbols(self, vecs: [(int, int)]) -> dict:
+        symb = {}
+        for i in range(0, len(vecs)):
+            v = vecs[i]
+            symb[v] = string.ascii_letters[i]
+        return symb
+    
+    def calcSpace(self, vecs: [(int, int)]) -> [(int, int)]:
+        left = None
+        right = None
+        top = None
+        bot = None
+        for v in vecs:
+            vx = v[0]
+            vy = v[1]
+            if left == None:
+                left = vx
             else:
-                s = '-'
-            fin += s
-        fin += '\n'
-    return fin
+                left = vx if vx < left else left
 
-def testVec2() -> None:
-    assert Vec2(3, 3) + Vec2(0, 0) == Vec2(3, 3)
-    assert Vec2(3, 3) + Vec2(1, 0) == Vec2(4, 3)
-    assert Vec2(3, 3) + Vec2(-5, 0) == Vec2(-2, 3)
+            if right == None:
+                right = vx
+            else:
+                right = vx if vx > right else right
 
-def testDir() -> None:
-    assert Vec2(3,3).isMoreDir(Dir.E, Vec2(0,0))
-    assert Vec2(3,3).isMoreDir(Dir.S_E, Vec2(0,0))
-    assert Vec2(-1,-1).isMoreDir(Dir.W, Vec2(3, 3))
-    assert Vec2(-1,-5).isMoreDir(Dir.N_W, Vec2(3, 3))
+            if top == None:
+                top = vy
+            else:
+                top = vy if vy < top else top
+            
+            if bot == None:
+                bot = vy
+            else:
+                bot = vy if vy > bot else bot
+        return [(left, top), (right, bot)]
+    
+    def calcMap(self) -> dict:
+        mp = {}
 
-    assert Vec2(3,3).isEqDir(Dir.W, Vec2(3, 0))
-    assert Vec2(2,3).isEqDir(Dir.S, Vec2(0, 3))
+        for y in range(self.posStart[1] - 1, self.posEnd[1] + 2):
+            for x in range(self.posStart[0] - 1, self.posEnd[0] + 2):
+                pos = (x, y)
 
-def testInput() -> None:
-    vecs = inputToVec2(getInput('input_tests.txt'))
-    #assert findMostDir(vecs, Dir.N_W) == Vec2(1,1)
-    for x in Dir:
-        print('{}:  \t{}'.format(x, findMostDir(vecs, x)))
-    #assert findMostDir(vecs, Dir.S_W) == Vec2(8,9)
-    for v in vecs:
-        print('{}: {}'.format(v, isAreaInfinite(v,vecs)))
-    print(coordSpace(vecs))
-    print(printVecs(vecs))
+                bigDist = 100000
+                for v in self.coords:
+                    d = self.distTo(v, pos)
+                    if d == 0:
+                        # self
+                        mp[pos] = 0
+                        break
+                    elif d < bigDist:
+                        # closer than another
+                        mp[pos] = v
+                        bigDist = d
+                    elif d == bigDist:
+                        # equal distance to another
+                        mp[pos] = None
+        return mp
 
-    space = coordSpace(vecs)
-    map = {}
-    for y in range(space.pos.y - 1, space.posEnd.y + 1):
-        for x in range(space.pos.x - 1, space.posEnd.x + 1):
-            pos = Vec2(x, y)
+    def distTo(self, v1: (int, int), v2: (int, int)) -> int:
+        return abs(v2[0] - v1[0] ) + abs(v2[1] - v1[1])
 
-            bigDist = 100000
-            for v in vecs:
-                d = distTo(v, pos)
-                if d == bigDist:
-                    map[pos.toTuple()] = '.'
-                if d < bigDist:
-                    map[pos.toTuple()] = v.label
-                    bigDist = d
-    print(printMap(map, vecs))
+    def isInfinite(self, v1: (int, int)) -> bool:
+        nLeft = 0
+        nRight = 0
+        nAbove = 0
+        nBelow = 0
+        # there are no vecs on the left
+        for x in range(self.posStart[0], v1[0]):
+            pos = (x, v1[1])
+            if pos in self.map:
+                if self.map[pos] != v1:
+                    nLeft += 1
+        # OR there are no vecs on the right
+        for x in range(v1[0], self.posEnd[0]):
+            pos = (x, v1[1])
+            if pos in self.map:
+                if self.map[pos] != v1:
+                    nRight += 1
+        # OR there are no vecs above
+        for y in range(self.posStart[1], v1[1]):
+            pos = (v1[0], y)
+            if pos in self.map:
+                if self.map[pos] != v1:
+                    nAbove += 1
+        # OR there are no vecs below
+        for y in range(v1[1], self.posEnd[1]):
+            pos = (v1[0], y)
+            if pos in self.map:
+                if self.map[pos] != v1:
+                    nBelow += 1
+        
+        return nLeft == 0 or nRight == 0 or nAbove == 0 or nBelow == 0
+    
+    def numConnected(self, coord: (int, int)) -> int:
+        if self.isInfinite(coord):
+            return -1
+        else:
+            n = 0
+            for v in self.map:
+                if self.map[v] == coord:
+                    n += 1
+            # for itself
+            n += 1
+            return n
+    
+    # (coord, num)
+    def mostConnected(self) -> ((int, int), int):
+        ns = {}
+        for v in self.coords:
+            ns[v] = self.numConnected(v)
+        sortedNs = sorted(ns.items(), key=operator.itemgetter(1))
+        #return (sortedNs.keys(0), sortedNs.keys[0])
+        return sortedNs
+    
+    def __repr__(self) -> str:
+        s = ''
+        for y in range(self.posStart[1] - 1, self.posEnd[1] + 2):
+            for x in range(self.posStart[0] - 1, self.posEnd[0] + 2):
+                pos = (x, y)
 
-def tests() -> None:
-    testVec2()
-    testDir()
-    testInput()
+                if pos in self.coords:
+                    symb = self.symbols[pos]
+                    if self.isInfinite(pos):
+                        #s += '\033[92m{}\033[0m'.format('I')
+                        s += '>'
+                    else:
+                        #s += '\033[92m{}\033[0m'.format(symb)
+                        s += symb
+                else:
+                    if pos in self.map:
+                        val = self.map[pos]
+                        
+                        if val == None:
+                            s += '.'
+                        else:
+                            s += self.symbols[val]
+                    else:
+                        s += '-'
+            s += '\n'
+        return s
 
-def task() -> None:
-    # dict 'cos we're in 'infinite' space
-    map = {}
+"""
+    TESTS
+"""
+def testInputTxt():
+    vecs = parseFile('input_tests.txt')
 
-    vecs = inputToVec2(getInput('input.txt'))
+    space = VecSpace(vecs)
+    print(space)
+    print(vecs)
+    print(space.isInfinite(vecs[2]))
 
-    for v in vecs:
-        print('{}: {}'.format(v, isAreaInfinite(v,vecs)))
-    print(coordSpace(vecs))
-    print(len(vecs))
+def tests():
+    testInputTxt()
 
-    space = coordSpace(vecs)
-    map = {}
-    for y in range(space.pos.y - 1, space.posEnd.y + 1):
-        for x in range(space.pos.x - 1, space.posEnd.x + 1):
-            pos = Vec2(x, y)
+"""
+    MAIN
+"""
+def task():
+    vecs = parseFile('input.txt')
+    space = VecSpace(vecs)
 
-            bigDist = 100000
-            for v in vecs:
-                d = distTo(v, pos)
-                if d == bigDist:
-                    map[pos.toTuple()] = '.'
-                if d < bigDist:
-                    map[pos.toTuple()] = v.label
-                    bigDist = d
-    #print(printMap(map, vecs))
+    conn = space.mostConnected()
+    print(list(map(lambda x: (space.symbols[x[0]], x[1]), conn)))
+
     with open('vecmap.txt', 'w') as f:
-        f.write(printMap(map, vecs))
+        f.write(str(space))
         f.close()
-
-# --------------------------------
 
 #tests()
 task()
