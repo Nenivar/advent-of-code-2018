@@ -38,8 +38,8 @@ class Step():
     def __repr__(self) -> str:
         return '{}: {}->{};\t{}<-{}'.format(self.id, self.id, self.reprLinksTo(), self.id, self.reprLinksFrom())
 
-def findFirst(steps: [Step]) -> Step:
-    return list(filter(lambda s: not s.linksFrom, steps))[0]
+def findFirst(steps: [Step]) -> [Step]:
+    return list(filter(lambda s: not s.linksFrom, steps))
 
 def findLast(steps: [Step]) -> Step:
     return list(filter(lambda s: not s.linksTo, steps))[0]
@@ -50,10 +50,13 @@ def runThrough(steps: [Step]) -> [Step]:
     finished = list(steps.keys())
     finished.sort()
 
-    first = findFirst(steps.values())
+    # there are multiple first nodes
     last = findLast(steps.values())
+    first = findFirst(steps.values())
+    avail.extend(first[1:])
 
-    cur = first
+    # ...but there still needs to be one first
+    cur = first[0]
     print('Starting with {}'.format(cur))
     while cur != last:
         marked.append(cur)
@@ -150,22 +153,13 @@ def stepsStr(steps: [Step]) -> str:
     return ','.join(list(map(lambda x: x.id, steps)))
 
 def tests():
-    print(stepsStr(runThroughInput('input_tests.txt')))
+    print(stepsStr(runThroughInput('input_tests.txt')).replace(',', ''))
 
 """
     TASK
 """
 def task():
-    lines = getInput('input.txt')
-    parsed = list(map(parseLine, lines))
-    steps = createSteps(parsed)
-    createLinks(steps, parsed)
+    print(stepsStr(runThroughInput('input.txt')).replace(',', ''))
 
-    print('----')
-    print('{} -> {}'.format(findFirst(steps.values()).id, findLast(steps.values()).id))
-    print('----')
-
-    return runThrough(steps)
-
-tests()
-#task()
+#tests()
+task()
