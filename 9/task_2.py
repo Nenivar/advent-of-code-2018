@@ -121,11 +121,12 @@ def tests():
     assert g3.getHighestPlayerScore() == 146373
 
 def task():
+    #base = '465 players; last marble is worth {} points'
     base = '465 players; last marble is worth {} points'
     dist = 0
     mp = {}
     c = 0
-    for i in range(0, 1500):
+    for i in range(0, 4000):
         score = getScoreForInput(base.format(i))
         if score != dist:
             c += 1
@@ -141,6 +142,8 @@ def task():
 
             print('{}: {} |\t{}|\t{}'.format(i, score, iDiff, diff, ))
             print('\t{}->+{}\t{}'.format(c, diff, mp))
+        else:
+            print('{}: {}'.format(i, score))
         #print(getScoreForInput(base.format(i)))
 
     #parsed = parseInput('465 players; last marble is worth 1 points')
