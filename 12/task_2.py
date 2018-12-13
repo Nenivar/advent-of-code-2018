@@ -70,12 +70,26 @@ def tests():
         g.simGen()
     print(g.sumGen())
 
+def incDictVal(key, diff, dct: {}):
+    if key in dct:
+        dct[key] += diff
+    else:
+        dct[key] = diff
+
 def task():
-    psd = parseInput('input_tests.txt')
+    psd = parseInput('input.txt')
     
     g = Garden(psd[0], psd[1])
-    g.addPadding(20)
-    for i in range(0, 20):
-        print('{}:\n{}'.format(i, g))
+    g.addPadding(100000)
+
+    sums = {}
+    sumPrev = g.sumGen()
+    for i in range(0, 5000):
+        diff = g.sumGen() - sumPrev
+        sumPrev = g.sumGen()
+        incDictVal(sumPrev, 1, sums)
+        print('{}:{}\tDIFF:{}\tSUMS:{}'.format(i, g.sumGen(), diff, len(sums)))
         g.simGen()
     print(g.sumGen())
+
+task()
