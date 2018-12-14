@@ -158,12 +158,16 @@ def tests():
         print(tr)
         input()
 
+import os
+
 def task():
     tr = parseInput(readInput('input.txt'))
 
     print(tr)
     for i in range(1, 100000):
+        #os.system('cls' if os.name == 'nt' else 'clear')
         print(i)
+        #print(tr)
         """ if i == 1000:
             with open('output.txt', 'w') as f:
                 f.write(str(tr))
@@ -171,5 +175,5 @@ def task():
             input() """
         tr.moveCarts()
 
-task()
-#tests()
+#task()
+tests()
