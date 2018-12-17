@@ -44,9 +44,9 @@ def parseSection(section: [str]) -> ([int], [int], [int]):
 print(x) """
 
 def test():
-    before = [3,2,1,1]
-    instr = [9,2,1,2]
-    after = [3,2,2,1]
+    before = [2, 1, 1, 0]
+    instr = [9,2,1,3]
+    after = [2, 1, 1, 2]
 
     correct = 0
     for func in funcs:
@@ -64,6 +64,8 @@ def getNameForFunc(f) -> str:
     else:
         return f.__name__
 
+opcodes = {}
+# map opcodes -> function
 with open('input_1.txt', 'r') as f:
     lines = f.readlines()
     sections = [lines[i : i + 3] for i in range(0, len(lines), 4)]
@@ -72,7 +74,6 @@ with open('input_1.txt', 'r') as f:
     # opcode -> {func. name -> occurances}
     matches = defaultdict(dict)
 
-    threeOrMore = 0
     for entry in data:
         before = entry[0]
         instr = entry[1]
@@ -86,13 +87,33 @@ with open('input_1.txt', 'r') as f:
                 vals = matches[instr[0]]
                 funcName = getNameForFunc(func)
                 vals[funcName] = 1 if funcName not in vals else vals[funcName] + 1
-                #matches[instr[0]][getNameForFunc(func)] += 1
-                #correct += 1
-        if correct >= 3:
-            threeOrMore += 1
-    print(threeOrMore)
 
+    # func -> opcodes used in
+    funcsIn = {}
     for k,v in matches.items():
-        print('{}:{}'.format(k, v))
+        for ff in v:
+            if ff in funcsIn:
+                funcsIn[ff].append(k)
+            else:
+                funcsIn[ff] = [k]
+    
+    checked = set()
+    while len(checked) < 16:
+        for k,v in funcsIn.items():
+            diff = set(v) - checked
+            if len(diff) == 1:
+                opcode = diff.pop()
+                for ff in funcs:
+                    if getNameForFunc(ff) == k:
+                        opcodes[opcode] = ff
+                checked.add(opcode)
 
+    f.close()
+
+with open('input_2.txt', 'r') as f:
+    registers = [0, 0, 0, 0]
+    for line in f:
+        instr = list(map(int, line.split(' ')))
+        opcodes[instr[0]](registers, instr[1], instr[2], instr[3])
+    print(registers)
     f.close()
