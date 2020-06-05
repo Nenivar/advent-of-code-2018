@@ -24,15 +24,24 @@ with open('input.txt', 'r') as f:
 
     f.close()
 
-registers = [0] * 6
+#registers = [0] * 6
+registers = [1] + [0] * 5
+#print(registers)
 
 def executeInstr(instructions: [()]) -> [int]:
+    dist = []
     while registers[ipIdx] > -1 and registers[ipIdx] < len(instructions):
         # get next to exec. from pointer.
         next = instructions[registers[ipIdx]]
         next[0](registers, next[1], next[2], next[3])
         # increase pointer
         registers[ipIdx] += 1
+        print(registers)
+
+        if registers[0] not in dist:
+            #print(registers)
+            print(registers[0])
+            dist.append(registers[0])
     registers[ipIdx] -= 1
 
 executeInstr(instructions)
